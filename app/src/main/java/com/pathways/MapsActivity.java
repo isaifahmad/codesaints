@@ -4,10 +4,13 @@ import android.graphics.Color;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.Interpolator;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -40,6 +43,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private List polylinePoints= new ArrayList<LatLng>();
     //private int currentEmulatedLocation = 0;
     private Marker userMarker;
+    private double oldBearing = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -164,15 +168,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
 
                 LatLng currentLocation = (LatLng) polylinePoints.get(currentEmulatedLocation);
-                userMarker.setPosition(currentLocation);
+
                 if(currentEmulatedLocation > 0) {
                     LatLng lastLocation = (LatLng) polylinePoints.get(currentEmulatedLocation-1);
+                    animatedMarker(lastLocation, currentLocation, userMarker);
+                    //userMarker.setPosition(currentLocation);
                     OnLocationChange(currentLocation, lastLocation);
                 }
 
                 emulateMarkerMove(currentEmulatedLocation+1);
             }
-        }, 2000);
+        }, 4000);
     }
 
     public void OnLocationChange(LatLng location, LatLng lastLocation) {
@@ -194,7 +200,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             double y = Math.sin(dLon) * Math.cos(lat2);
             double x = Math.cos(lat1)*Math.sin(lat2) - Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
             bearing = Math.toDegrees((Math.atan2(y, x)));
-            bearing = (360 - ((bearing + 360) % 360));
+            if(bearing != 0) {
+                bearing = (360 - ((bearing + 360) % 360));
+            }else{
+                bearing = oldBearing;
+            }
+            oldBearing = bearing;
         }
 
         CameraPosition cameraPosition = CameraPosition.builder().
@@ -206,6 +217,48 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+    }
+
+    private void animatedMarker(final LatLng startPosition,final LatLng nextPosition,final Marker mMarker) {
+
+        final Handler handler =  new Handler();
+        final long start = SystemClock.uptimeMillis();
+        final Interpolator interpolator = new AccelerateDecelerateInterpolator();
+        final float durationInMs = 4000;
+        final boolean hideMarker = false;
+
+        handler.post(new Runnable() {
+            long elapsed;
+            float t;
+            float v;
+
+            @Override
+            public void run() {
+                // Calculate progress using interpolator
+                elapsed = SystemClock.uptimeMillis() - start;
+                t = elapsed / durationInMs;
+                v = interpolator.getInterpolation(t);
+
+                LatLng currentPosition = new LatLng(
+                        startPosition.latitude * (1 - t) + nextPosition.latitude * t,
+                        startPosition.longitude * (1 - t) + nextPosition.longitude * t);
+
+                mMarker.setPosition(currentPosition);
+
+                // Repeat till progress is complete.
+                if (t < 1) {
+                    // Post again 16ms later.
+                    handler.postDelayed(this, 16);
+                } else {
+                    if (hideMarker) {
+                        mMarker.setVisible(false);
+                    } else {
+                        mMarker.setVisible(true);
+                    }
+                }
+            }
+        });
+
     }
 
     private String getDirectionsUrl(LatLng origin, LatLng dest) {
