@@ -11,6 +11,7 @@ import android.os.SystemClock;
 import android.support.annotation.ColorRes;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.animation.LinearOutSlowInInterpolator;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
@@ -248,6 +249,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_maps);
         button = (ImageView) findViewById(R.id.button);
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, currentVolume, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -274,7 +276,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         object.setLog(77.093913);
         object.setLabel("Bristol Chawk");
         List<String> list = new ArrayList<>();
-        list.add("Hi, I am your personal assistant Pathways for site tour. I will be assisting you in reaching to DLF Camellias.");
+        list.add("Hi, I am your personal assistant Pathways for site tour. I will be assisting you in reaching to DLF Camellias.Golf Course Road is a stretch of 6.7 kilometers with major localities of Gurgaon including DLF Phase 1 & DLF Phase 5.");
         object.setSpeechList(list);
 
 
@@ -284,7 +286,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         object.setLog(77.093103);
         object.setLabel("DLF Mega Mall");
         list = new ArrayList<>();
-        list.add("The commercial space in Golf Course Road is quite prominent. You can see DLF Mega Mall on your right side which is one of the popular Mall in this locality.");
+        list.add("The commercial space in Golf Course Road is quite prominent. You can see DLF Mega Mall on your right side which is one of the popular Mall in this locality. Per square feet price in Golf course road ranges between 9 thousand and 18.5 thousand rupees for buy.");
         object.setSpeechList(list);
 
         data.add(object);
@@ -293,7 +295,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         object.setLog(77.093897);
         object.setLabel("DLF Phase 1");
         list = new ArrayList<>();
-        list.add("Now you are passing through DLF Phase 1 on your left side where the average price per square feet for Buy is 16 thousands. The per square feet price ranges between 12 thousands and 26 thousands in this locality.");
+        list.add("Now you are passing through DLF Phase 1 on your right side where the average price per square feet for Buy is 16 thousand. The per square feet price ranges between 12 thousand and 26 thousand in this locality. There has been an appreciation of 87% and 59% in price per square feet for DLF Phase 1 in last 10 years and 5 years respectively.");
         object.setSpeechList(list);
 
         data.add(object);
@@ -302,7 +304,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         object.setLog(77.094125);
         object.setLabel("Sector 27");
         list = new ArrayList<>();
-        list.add("On your right side there is a Sector 27. It is a popular residential locality in Gurgaon which offers necessary civic and social infrastructures.");
+        list.add("On your right side there is a Sector 27. It is a popular residential locality in Gurgaon which offers necessary civic and social infrastructures. Average price per square feet for Sector 27 is 11 thousand for Buy.");
         object.setSpeechList(list);
 
         data.add(object);
@@ -311,7 +313,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         object.setLog(77.096944);
         object.setLabel("Sector 42-43 Rapid Metro Station");
         list = new ArrayList<>();
-        list.add("Here you are passing through Rapid Metro station Sector 42-43. Rapid Metro started on Golf Course Road in November 2013. It has a total length of 11.7 kilometers which connects all major sectors of Golf Course Road with center of the city and further with near by city, Delhi.");
+        list.add("Here you are passing through Rapid Metro station Sector 42 43. Rapid Metro started on Golf Course Road in November 2013 which connects all major sectors of Golf Course Road with center of the city and Delhi.");
+        object.setSpeechList(list);
+
+        data.add(object);
+
+        object = new LatLongObject();
+        object.setLat(28.454561);
+        object.setLog(77.097458);
+        object.setLabel("");
+        list = new ArrayList<>();
+        list.add("Sector 43 has shown a price appreciation of 155% in last 10 years but a decline of 11% in last 5 years for buy. The average price per square feet in Sector 43 is 10 thousand 8 hundred Rupees. ");
         object.setSpeechList(list);
 
         data.add(object);
@@ -320,7 +332,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         object.setLog(77.099537);
         object.setLabel("DLF Camellias");
         list = new ArrayList<>();
-        list.add("Hey now you are reaching your destination DLF Camellias in Sector 42.");
+        list.add("Hey now you are reaching your destination DLF Camellias in Sector 42. DLF Camellias is a residential project by DLF Group offering all modern amenities. It is spread in 18 acres of land with 75% of green space. The project is offering 12 hundred flats with 4,5 and 6 BHK in 16 Towers of 39 floors each. and the flats sizes range between 7196 and 7400 squate feet. The price per flat starts from 195 million and goes up to 257 millions in DLF Camellias. We are ending our site tour here. Please let me know if you want to know more about the project.");
         object.setSpeechList(list);
 
         data.add(object);
@@ -399,7 +411,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 points.add(point.latLng);
 
                 lineOptions.addAll(points);
-                lineOptions.width(30);
+                lineOptions.width(24);
                 lineOptions.color(Color.parseColor("#0080ff"));
                 lineOptions.geodesic(true);
             }
@@ -425,14 +437,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             return;
         }
         if (getNextPoint() != null && shouldStartSpeech(getNextPoint()) && !isSpeaking) {
-            LatLng marker = new LatLng((double) getNextPoint().getLat(), getNextPoint().getLog());
-            addMarker(marker, R.color.icon_orange_color, false, getNextPoint().getLabel());
+            if (!TextUtils.isEmpty(getNextPoint().getLabel())) {
+                LatLng marker = new LatLng((double) getNextPoint().getLat(), getNextPoint().getLog());
+                addMarker(marker, R.color.icon_orange_color, false, getNextPoint().getLabel());
+            }
             speak(getCommentory(getNextPoint()));
             getNextPoint().setPassed(true);
             isSpeaking = true;
         }
 
-        final int duration = polylinePoints.get(currentEmulatedLocation).duration;
+        final int duration = polylinePoints.get(currentEmulatedLocation).duration / 2;
         Log.e("emulateMarkerMove : ", " " + duration);
 
         handler = new Handler();
@@ -466,7 +480,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 currentPosition != null && currentPosition.latLng != null && currentPosition.latLng.latitude > 0.0 &&
                 currentPosition.latLng.longitude > 0.0) {
             double distance = meterDistanceBetweenPoints(nextPoint.getLat(), nextPoint.getLog(), currentPosition.latLng.latitude, currentPosition.latLng.longitude);
-            return distance < 250;
+            return distance < 350;
         }
         return false;
     }
