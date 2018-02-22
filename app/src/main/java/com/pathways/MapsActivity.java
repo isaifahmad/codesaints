@@ -1,11 +1,14 @@
 package com.pathways;
 
 import android.graphics.Color;
+import android.graphics.Point;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.SystemClock;
+import android.support.annotation.ColorRes;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.view.animation.LinearOutSlowInInterpolator;
 import android.util.Log;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.Interpolator;
@@ -13,6 +16,7 @@ import android.view.animation.Interpolator;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
@@ -20,7 +24,10 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.mapzen.speakerbox.Speakerbox;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -40,6 +47,99 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private List<PolylinePoint> polylinePoints= new ArrayList<>();
     private Marker userMarker;
     private double oldBearing = 0;
+    private String jsonString = "[\n" +
+            "  {\n" +
+            "    \"Event\": \"Beginning\",\n" +
+            "    \"Latitude\": 28.478886,\n" +
+            "    \"Longitude\": 77.093913,\n" +
+            "    \"Commentary\": \"Golf Course Road starts from Bristol Chowk and goes up to Sector 56. It is a stretch of 6.7 kilometers around major localities of Gurgaon that is DLF Phase 1, DLF Phase 5, Sector 54, 56 and many more.\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"Beginning\",\n" +
+            "    \"Latitude\": 28.478886,\n" +
+            "    \"Longitude\": 77.093913,\n" +
+            "    \"Commentary\": \"There are more than 170 real estate projects from 40+ Builers in Golf Course Road.\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"Landmark: DLF Mega Mall\",\n" +
+            "    \"Latitude\": 28.475849,\n" +
+            "    \"Longitude\": 77.093103,\n" +
+            "    \"Commentary\": \"The commercial space in Golf Course Road is quite prominent. You can see DLF Mega Mall on your right side which is one of the popular Mall in this locality.\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"Beginning\",\n" +
+            "    \"Latitude\": 28.478886,\n" +
+            "    \"Longitude\": 77.093913,\n" +
+            "    \"Commentary\": \"Prices for Properties in Golf Course Road ranges between 9 thousand and 18.5 thousands Indian Rupees per sqare feet for Buy and Rental in this area ranges between 50 thousand and 4 Lac Indian Rupees. The average price per square feet for this locality is 56% higher than the average price for entire city Gurgaon.\",\n" +
+            "    \"\": \"\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"Beginning\",\n" +
+            "    \"Latitude\": 28.478886,\n" +
+            "    \"Longitude\": 77.093913,\n" +
+            "    \"Commentary\": \"The average price for this locality has witnessed a growth of 95% in last 10 years however a decline of 11% in last 5 years. The highest price has been 14.5 thousand per square feet here in 2015.\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"Beginning\",\n" +
+            "    \"Latitude\": 28.478886,\n" +
+            "    \"Longitude\": 77.093913,\n" +
+            "    \"Commentary\": \"The Golf Course Road has around 20 schools and more than 7 hospitals existing within 6.7 km of the area.\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"Beginning\",\n" +
+            "    \"Latitude\": 28.478886,\n" +
+            "    \"Longitude\": 77.093913,\n" +
+            "    \"Commentary\": \"This locality is known for its luxury service apartments and has easy proximity to the Delhi.\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"Landmark: Sector 27 (on your right)\",\n" +
+            "    \"Latitude\": 28.448394,\n" +
+            "    \"Longitude\": 77.099961,\n" +
+            "    \"Commentary\": \"On your right side there is a Sector 27. It is a popular residential locality in Gurgaon which offers necessary civic and social infrastructures.\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"Landmark: Sector 27 (on your right)\",\n" +
+            "    \"Latitude\": 28.448394,\n" +
+            "    \"Longitude\": 77.099961,\n" +
+            "    \"Commentary\": \"Average price for Sector 27 is 11 thousands for Buy and 42 thousands is average monthly rent in this locality.\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"Landmark: DLF Phase 1 (on your left)\",\n" +
+            "    \"Latitude\": 28.471041,\n" +
+            "    \"Longitude\": 77.094151,\n" +
+            "    \"Commentary\": \"Now you are passing through DLF Phase 1 on your left side where the average price per sqaure feet for Buy is 16 thousand. The per square feet price ranges between 12 tweleve thousands and 26 thousands in this locality for Buy.\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"Landmark: DLF Phase 1 (on your left)\",\n" +
+            "    \"Latitude\": 28.471041,\n" +
+            "    \"Longitude\": 77.094151,\n" +
+            "    \"Commentary\": \"There has been an appreciation of 87% and 59% in price per square feet for DLF Phase 1 in last 10 years and 5 years respectively.\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"Landmark: Sector 42-43 Rapid Metro Station\",\n" +
+            "    \"Latitude\": 28.457416,\n" +
+            "    \"Longitude\": 77.096955,\n" +
+            "    \"Commentary\": \"Here you are passing through Rapid Metro station Sector 42-43. Rapid Metro started on Golf Course Road since November 2013. It has a total length of 11.7 kilometers which connects all major sectors of Golf Course Road with center of the city and further with Delhi.\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"Landmark: Sector 42-43 Rapid Metro Station\",\n" +
+            "    \"Latitude\": 28.457416,\n" +
+            "    \"Longitude\": 77.096955,\n" +
+            "    \"Commentary\": \"Sector 43 on your left has shown a price appreciation of 155% in last 10 years but a decline of 11% in last 5 years for buy.\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"Landmark: Sector 42-43 Rapid Metro Station\",\n" +
+            "    \"Latitude\": 28.457416,\n" +
+            "    \"Longitude\": 77.096955,\n" +
+            "    \"Commentary\": \"The average price per square feet in Sector 43 is 10 thousand 8 hundred.\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"Landmark: Sector 42-43 Rapid Metro Station\",\n" +
+            "    \"Latitude\": 28.457416,\n" +
+            "    \"Longitude\": 77.096955,\n" +
+            "    \"Commentary\": \"There are around 20 residential projects in this locality including popular projects like DLF The Icon, DLF Pinnacle and Ansal Maple Heights\"\n" +
+            "  }\n" +
+            "]";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,13 +159,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         MarkerOptions options = new MarkerOptions();
         options.position(origin);
-        options.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker));
+        options.icon(BitmapDescriptorFactory.fromResource(R.drawable.car));
         //options.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
         userMarker = mMap.addMarker(options);
 
         String url = getDirectionsUrl(origin, destination);
         DownloadTask downloadTask = new DownloadTask();
         downloadTask.execute(url);
+       // addMarker(origin,R.color.icon_orange_color,false);
     }
 
     private class DownloadTask extends AsyncTask<String, Void, String> {
@@ -120,6 +221,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if(null==result || result.isEmpty()){
                 return;
             }
+
             PolylineOptions lineOptions = null;
             List<LatLng> points = new ArrayList<>();
             if(null==polylinePoints){
@@ -128,9 +230,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 polylinePoints.clear();
             }
 
+
             polylinePoints.addAll(result);
 
             initMapDirection();
+
 
             for (int i = 0; i < result.size(); i++) {
                 lineOptions = new PolylineOptions();
@@ -139,15 +243,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 points.add(point.latLng);
 
                 lineOptions.addAll(points);
-                lineOptions.width(24);
-                lineOptions.color(Color.BLUE);
+                lineOptions.width(30);
+                lineOptions.color(Color.parseColor("#0080ff"));
                 lineOptions.geodesic(true);
             }
 
             if(null!=lineOptions) {
                 mMap.addPolyline(lineOptions);
             }
-
+            playSpeech(0);
             emulateMarkerMove(0);
         }
     }
@@ -166,6 +270,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
         final int duration = polylinePoints.get(currentEmulatedLocation).duration;
+        Log.e("emulateMarkerMove : ", " " + duration);
+
         final Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
@@ -285,4 +391,72 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         return data;
     }
+
+    private void playSpeech(final int position){
+        try {
+        final JSONArray jsonArray = new JSONArray(jsonString);
+        final Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Speakerbox speakerbox = new Speakerbox(getApplication());
+                    JSONObject jsonObject = new JSONObject(jsonArray.get(position).toString());
+                    speakerbox.play(jsonObject.getString("Commentary"));
+                    if(!jsonObject.get("Latitude").equals("do") ||!jsonObject.get("Longitude").equals("do")) {
+                        LatLng marker = new LatLng((double) jsonObject.get("Latitude"), (double) jsonObject.get("Longitude"));
+                        addMarker(marker, R.color.icon_orange_color, false, jsonObject.getString("Event"));
+                    }
+                }catch (JSONException e){
+
+                }
+                playSpeech(position+1);
+            }},4000);
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+
+    protected Marker addMarker(LatLng position, @ColorRes int color, boolean draggable , String title) {
+        MarkerOptions markerOptions = new MarkerOptions();
+        markerOptions.draggable(draggable);
+       // markerOptions.icon(MapUtils.getIconBitmapDescriptor(getActivity(), color));
+        markerOptions.position(position);
+        Marker pinnedMarker = mMap.addMarker(markerOptions);
+        pinnedMarker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.info_marker));
+        pinnedMarker.setTitle(title);
+        startDropMarkerAnimation(pinnedMarker);
+        return pinnedMarker;
+    }
+
+    private void startDropMarkerAnimation(final Marker marker) {
+        final LatLng target = marker.getPosition();
+        final Handler handler = new Handler();
+        final long start = SystemClock.uptimeMillis();
+        Projection proj = mMap.getProjection();
+        Point targetPoint = proj.toScreenLocation(target);
+        final long duration = (long) (200 + (targetPoint.y * 0.6));
+        Point startPoint = proj.toScreenLocation(marker.getPosition());
+        startPoint.y = 0;
+        final LatLng startLatLng = proj.fromScreenLocation(startPoint);
+        final Interpolator interpolator = new LinearOutSlowInInterpolator();
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                long elapsed = SystemClock.uptimeMillis() - start;
+                float t = interpolator.getInterpolation((float) elapsed / duration);
+                double lng = t * target.longitude + (1 - t) * startLatLng.longitude;
+                double lat = t * target.latitude + (1 - t) * startLatLng.latitude;
+                marker.setPosition(new LatLng(lat, lng));
+                if (t < 1.0) {
+                    // Post again 16ms later == 60 frames per second
+                    handler.postDelayed(this, 16);
+                }
+            }
+        });
+    }
+
 }
