@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-package com.pathways;
+package com.pathways.conversation;
 
 import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
-import android.util.Log;
-
-import java.util.HashMap;
 
 public class TTS {
 

@@ -1,39 +1,38 @@
-package com.pathways;
+package com.pathways.conversation;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Handler;
-import android.speech.tts.TextToSpeech;
-import android.support.annotation.Nullable;
-import android.util.Log;
-import ai.api.AIDataService;
-import ai.api.AIListener;
-import ai.api.AIServiceException;
-import ai.api.android.AIConfiguration;
-import ai.api.android.AIService;
-import android.support.v4.app.ActivityCompat;
-import android.content.pm.PackageManager;
-import android.view.View;
-import ai.api.model.AIError;
-import ai.api.model.AIRequest;
-import ai.api.model.Metadata;
-import java.util.HashMap;
+import android.os.Vibrator;
 import android.support.annotation.NonNull;
-import ai.api.model.AIResponse;
-import java.util.Map;
-
-import ai.api.model.Result;
-import android.os.AsyncTask;
-import android.widget.ImageView;
+import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.util.Log;
+import android.widget.ListView;
 import android.widget.TextView;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import android.Manifest;
-import android.support.v4.content.ContextCompat;
-import ai.api.model.Status;
+import com.pathways.R;
+import com.pathways.conversation.ui.ChatAdapter;
+import com.pathways.conversation.ui.UIIncomingChatMessage;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import ai.api.AIListener;
+import ai.api.android.AIConfiguration;
+import ai.api.android.AIService;
 import ai.api.android.GsonFactory;
-import android.os.Vibrator;
+import ai.api.model.AIError;
+import ai.api.model.AIResponse;
+import ai.api.model.Metadata;
+import ai.api.model.Result;
 
 
 /**
@@ -49,8 +48,14 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
     private static final int REQUEST_AUDIO_PERMISSIONS_ID = 33;
 
     private final String CLIENT_ACCESS_TOKEN = "a72af662d4e441eb87aead05e632b6d2";
+    private final String DEFAULT_SPEECH = "";
     private boolean isListening = false;
     private boolean isUttering = false;
+    private ListView chatListView;
+    private ChatAdapter adapter;
+
+    private AudioManager audioManager;
+    private int currentVolume;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -62,6 +67,11 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
 
     private void initViews() {
         resultTextView = findViewById(R.id.conversation_text_view);
+        chatListView = findViewById(R.id.chat_message_listview);
+        adapter = new ChatAdapter(getApplicationContext());
+        chatListView.setAdapter(adapter);
+        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
     }
 
     private void initAISDK() {
@@ -70,13 +80,11 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
                 AIConfiguration.RecognitionEngine.System);
         aiService = AIService.getService(this, config);
         aiService.setListener(this);
-        vibrate();
-        aiService.startListening();
     }
 
     private void vibrate() {
         Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        v.vibrate(500);
+        v.vibrate(100);
     }
 
     protected void checkAudioRecordPermission() {
@@ -87,7 +95,7 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.RECORD_AUDIO},
                     REQUEST_AUDIO_PERMISSIONS_ID);
-        }else {
+        } else {
             initAISDK();
         }
     }
@@ -113,7 +121,7 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
     protected void onPause() {
         super.onPause();
         if (aiService != null) {
-            aiService.pause();
+            aiService.stopListening();
         }
     }
 
@@ -121,7 +129,9 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
     protected void onResume() {
         super.onResume();
         if (aiService != null) {
-            aiService.resume();
+            vibrate();
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
+            aiService.startListening();
         }
     }
 
@@ -139,31 +149,20 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                // Log.d(TAG, "onResult");
-
-                resultTextView.setText(gson.toJson(response));
-
-                // Log.i(TAG, "Received success response");
-
-                // this is example how to get different parts of result object
-                final Status status = response.getStatus();
-                // Log.i(TAG, "Status code: " + status.getCode());
-                // Log.i(TAG, "Status type: " + status.getErrorType());
 
                 final Result result = response.getResult();
-                // Log.i(TAG, "Resolved query: " + result.getResolvedQuery());
-
-                // Log.i(TAG, "Action: " + result.getAction());
-
                 final String speech = result.getFulfillment().getSpeech();
-                // Log.i(TAG, "Speech: " + speech);
+                if (!speech.equalsIgnoreCase(DEFAULT_SPEECH)) {
+                    // UIOutgoingChatMessage message = new UIOutgoingChatMessage(speech);
+                    UIIncomingChatMessage message = new UIIncomingChatMessage(speech);
+                    adapter.appendMessages(message);
+                }
+                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, currentVolume, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
                 isUttering = true;
                 TTS.speak(speech);
 
                 final Metadata metadata = result.getMetadata();
                 if (metadata != null) {
-                    // Log.i(TAG, "Intent id: " + metadata.getIntentId());
-                    // Log.i(TAG, "Intent name: " + metadata.getIntentName());
                 }
 
                 final HashMap<String, JsonElement> params = result.getParameters();
@@ -225,8 +224,9 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                if(!isUttering && !isListening) {
+                if (!isUttering && !isListening) {
                     vibrate();
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
                     aiService.startListening();
                 }
             }
@@ -240,6 +240,7 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
             public void run() {
                 resultTextView.setText("Start listening again");
                 vibrate();
+                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
                 isUttering = false;
                 aiService.startListening();
             }
