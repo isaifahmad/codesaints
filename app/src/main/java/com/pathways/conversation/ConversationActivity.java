@@ -3,6 +3,7 @@ package com.pathways.conversation;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.os.Bundle;
@@ -153,11 +154,20 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
 
                 final Result result = response.getResult();
                 final String speech = result.getFulfillment().getSpeech();
-                if (!speech.equalsIgnoreCase(DEFAULT_SPEECH)) {
-                    // UIOutgoingChatMessage message = new UIOutgoingChatMessage(speech);
-                    UIIncomingChatMessage message = new UIIncomingChatMessage(speech);
-                    adapter.appendMessages(message);
+                Log.d("Maps", speech);
+                Log.d("Maps", "" + speech.equalsIgnoreCase("4 BHK"));
+                // UIOutgoingChatMessage message = new UIOutgoingChatMessage(speech);
+                UIIncomingChatMessage message = new UIIncomingChatMessage(speech);
+                adapter.appendMessages(message);
+                if (speech.equalsIgnoreCase("4 BHK") ||
+                        speech.equalsIgnoreCase("5 BHK") ||
+                        speech.equalsIgnoreCase("6 BHK")) {
+                    Log.d("Maps", "Here");
+                    Intent intent = new Intent(ConversationActivity.this, ViewFlipperActivity.class);
+                    intent.putExtra(ViewFlipperActivity.CHECK, speech);
+                    startActivity(intent);
                 }
+
                 audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, currentVolume, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
                 isUttering = true;
                 TTS.speak(speech);
