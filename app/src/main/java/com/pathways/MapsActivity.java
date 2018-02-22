@@ -16,6 +16,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.BounceInterpolator;
 import android.view.animation.Interpolator;
 import android.widget.ImageView;
 
@@ -47,6 +48,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, UtteranceCompleteListener {
 
@@ -446,7 +449,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (getNextPoint() != null && shouldStartSpeech(getNextPoint()) && !isSpeaking) {
             if (!TextUtils.isEmpty(getNextPoint().getLabel())) {
                 LatLng marker = new LatLng((double) getNextPoint().getLat(), getNextPoint().getLog());
-                addMarker(marker, R.color.icon_orange_color, false, getNextPoint().getLabel());
+                if(getNextPoint().getLabel().equalsIgnoreCase("DLF Camellias")) {
+                    addMarker(marker, R.color.icon_orange_color, false, getNextPoint().getLabel(),true);
+                }
+                else {
+                    addMarker(marker, R.color.icon_orange_color, false, getNextPoint().getLabel(),false);
+
+                }
                 currentLabel = getNextPoint().getLabel();
             }
             speak(getCommentory(getNextPoint()));
@@ -617,48 +626,72 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return data;
     }
 
-    private void playSpeech(final int position) {
-        try {
-            final JSONArray jsonArray = new JSONArray(jsonString);
-            final Handler handler = new Handler();
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Speakerbox speakerbox = new Speakerbox(getApplication());
-                        JSONObject jsonObject = new JSONObject(jsonArray.get(position).toString());
-                        //  speakerbox.play(jsonObject.getString("Commentary"));
-                        speak(jsonObject.getString("Commentary"));
-                        if (!jsonObject.get("Latitude").equals("do") || !jsonObject.get("Longitude").equals("do")) {
-                            LatLng marker = new LatLng((double) jsonObject.get("Latitude"), (double) jsonObject.get("Longitude"));
-                            addMarker(marker, R.color.icon_orange_color, false, jsonObject.getString("Event"));
-                        }
-                    } catch (JSONException e) {
+//    private void playSpeech(final int position) {
+//        try {
+//            final JSONArray jsonArray = new JSONArray(jsonString);
+//            final Handler handler = new Handler();
+//            handler.postDelayed(new Runnable() {
+//                @Override
+//                public void run() {
+//                    try {
+//                        Speakerbox speakerbox = new Speakerbox(getApplication());
+//                        JSONObject jsonObject = new JSONObject(jsonArray.get(position).toString());
+//                        //  speakerbox.play(jsonObject.getString("Commentary"));
+//                        speak(jsonObject.getString("Commentary"));
+//                        if (!jsonObject.get("Latitude").equals("do") || !jsonObject.get("Longitude").equals("do")) {
+//                            LatLng marker = new LatLng((double) jsonObject.get("Latitude"), (double) jsonObject.get("Longitude"));
+//                            addMarker(marker, R.color.icon_orange_color, false, jsonObject.getString("Event"));
+//                        }
+//                    } catch (JSONException e) {
+//
+//                    }
+//                    // playSpeech(position + 1);
+//                }
+//            }, 4000);
+//
+//        } catch (JSONException e) {
+//            e.printStackTrace();
+//        }
+//
+//    }
 
-                    }
-                    // playSpeech(position + 1);
-                }
-            }, 4000);
 
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-
-    protected Marker addMarker(LatLng position, @ColorRes int color, boolean draggable, String title) {
+    protected Marker addMarker(LatLng position, @ColorRes int color, boolean draggable, String title , boolean isProject) {
         MarkerOptions markerOptions = new MarkerOptions();
         markerOptions.draggable(draggable);
         // markerOptions.icon(MapUtils.getIconBitmapDescriptor(getActivity(), color));
         markerOptions.position(position);
         Marker pinnedMarker = mMap.addMarker(markerOptions);
-        pinnedMarker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.info_marker));
+        if(isProject){
+            pinnedMarker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.project));
+        }else {
+            pinnedMarker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.info_marker));
+        }
+
         pinnedMarker.setTitle(title);
         pinnedMarker.showInfoWindow();
         startDropMarkerAnimation(pinnedMarker);
+        //bounceMarker(pinnedMarker);
         return pinnedMarker;
     }
+
+    private void bounceMarker(Marker pinnedMarker) {
+        final long start = SystemClock.uptimeMillis();
+        final long duration = 1500;
+
+        final Interpolator interpolator = new BounceInterpolator();
+        long elapsed = SystemClock.uptimeMillis() - start;
+        float t = Math.max(
+                1 - interpolator.getInterpolation((float) elapsed
+                        / duration), 0);
+        pinnedMarker.setAnchor(0.5f, 1.0f + 2 * t);
+
+//        Timer timer = new Timer();
+//        TimerTask updateProfile = new CustomTimerTask(MapsActivity.this, pinnedMarker);
+//        timer.scheduleAtFixedRate(updateProfile, 10,5000);
+    }
+
+
 
     private void startDropMarkerAnimation(final Marker marker) {
         final LatLng target = marker.getPosition();
@@ -701,6 +734,56 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         double tt = Math.acos(t1 + t2 + t3);
 
         return 6366000 * tt;
+    }
+
+    class CustomTimerTask extends TimerTask {
+        private Context context;
+        private Handler mHandler = new Handler();
+        Marker pinnerMarker;
+        int count=0;
+
+        // Write Custom Constructor to pass Context
+        public CustomTimerTask(Context con, Marker pinnedMarker) {
+            this.context = con;
+            this.pinnerMarker = pinnedMarker;
+        }
+
+        @Override
+        public void run() {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            final Handler handler = new Handler();
+                            final long start = SystemClock.uptimeMillis();
+                            final long duration = 1500;
+
+                            final Interpolator interpolator = new BounceInterpolator();
+
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    long elapsed = SystemClock.uptimeMillis() - start;
+                                    float t = Math.max(
+                                            1 - interpolator.getInterpolation((float) elapsed
+                                                    / duration), 0);
+                                    pinnerMarker.setAnchor(0.5f, 1.0f + 2 * t);
+
+                                    if (t > 0.0) {
+                                        // Post again 16ms later.
+                                        handler.postDelayed(this, 16);
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+            }).start();
+
+        }
+
     }
 
 }
