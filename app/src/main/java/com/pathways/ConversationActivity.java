@@ -1,9 +1,12 @@
 package com.pathways;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -18,9 +21,13 @@ import android.view.View;
 import ai.api.model.AIError;
 import ai.api.model.AIRequest;
 import ai.api.model.Metadata;
+
+import java.util.ArrayList;
 import java.util.HashMap;
 import android.support.annotation.NonNull;
 import ai.api.model.AIResponse;
+
+import java.util.Locale;
 import java.util.Map;
 
 import ai.api.model.Result;
@@ -47,6 +54,7 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
     private static final String TAG = ConversationActivity.class.getName();
     private Gson gson = GsonFactory.getGson();
     private static final int REQUEST_AUDIO_PERMISSIONS_ID = 33;
+    private final int REQ_CODE_SPEECH_INPUT = 100;
 
     private final String CLIENT_ACCESS_TOKEN = "a72af662d4e441eb87aead05e632b6d2";
     private boolean isListening = false;
@@ -71,6 +79,7 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
         aiService = AIService.getService(this, config);
         aiService.setListener(this);
         vibrate();
+        askSpeechInput();
         aiService.startListening();
     }
 
@@ -133,6 +142,45 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
             aiService.stopListening();
         }
     }
+
+    private void askSpeechInput() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+        try {
+            startActivityForResult(intent, REQ_CODE_SPEECH_INPUT);
+        } catch (ActivityNotFoundException a) {
+
+        }
+    }
+
+    // Receiving speech input
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        switch (requestCode) {
+            case REQ_CODE_SPEECH_INPUT: {
+                if (resultCode == RESULT_OK && null != data) {
+
+                    ArrayList<String> result = data
+                            .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                    Log.i("ConversationActivity", result.get(0));
+                }
+                break;
+            }
+
+        }
+    }
+
+
+
+
+
+
+
 
     @Override
     public void onResult(final AIResponse response) {
@@ -227,6 +275,7 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
             public void run() {
                 if(!isUttering && !isListening) {
                     vibrate();
+                    askSpeechInput();
                     aiService.startListening();
                 }
             }
@@ -241,6 +290,7 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
                 resultTextView.setText("Start listening again");
                 vibrate();
                 isUttering = false;
+                askSpeechInput();
                 aiService.startListening();
             }
         });
