@@ -17,6 +17,7 @@ import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.Interpolator;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -44,6 +45,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, UtteranceCompleteListener {
@@ -52,6 +54,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private GoogleMap mMap;
     private List<PolylinePoint> polylinePoints = new ArrayList<>();
     private Marker userMarker;
+    private HashMap<Marker, MyMarker> mMarkersHashMap;
     private double oldBearing = 0;
     List<LatLongObject> data = new ArrayList<>();
     PolylinePoint currentPosition;
@@ -265,6 +268,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
             }
         });
+
+        mMarkersHashMap = new HashMap<Marker, MyMarker>();
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
@@ -627,6 +632,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         }
                     } catch (JSONException e) {
 
+
                     }
                     // playSpeech(position + 1);
                 }
@@ -638,8 +644,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-
-    protected Marker addMarker(LatLng position, @ColorRes int color, boolean draggable, String title) {
+    protected Marker addMarker(LatLng position, @ColorRes int color, boolean draggable , String title) {
         MarkerOptions markerOptions = new MarkerOptions();
         markerOptions.draggable(draggable);
         // markerOptions.icon(MapUtils.getIconBitmapDescriptor(getActivity(), color));
@@ -649,7 +654,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         pinnedMarker.setTitle(title);
         pinnedMarker.showInfoWindow();
         startDropMarkerAnimation(pinnedMarker);
+        ArrayList<MyMarker> markersList= new ArrayList<>();
+
+        markersList.add(new MyMarker("Brasil", "icon1", Double.parseDouble("28.480888"), Double.parseDouble("77.094385")));
+        plotMarkers(markersList);
         return pinnedMarker;
+    }
+
+    private void plotMarkers(ArrayList<MyMarker> markers)
+    {
+        if(markers.size() > 0)
+        {
+            for (MyMarker myMarker : markers) {
+                // Create user marker with custom icon and other options
+                MarkerOptions markerOption = new MarkerOptions().position(new LatLng(myMarker.getmLatitude(), myMarker.getmLongitude()));
+                markerOption.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker));
+
+                Marker currentMarker = mMap.addMarker(markerOption);
+                mMarkersHashMap.put(currentMarker, myMarker);
+
+                mMap.setInfoWindowAdapter(new MarkerInfoWindowAdapter());
+            }
+        }
     }
 
     private void startDropMarkerAnimation(final Marker marker) {
@@ -695,4 +721,54 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return 6366000 * tt;
     }
 
+
+    private int manageMarkerIcon(String markerIcon) {
+        if (markerIcon.equals("icon1"))
+            return R.drawable.marker;
+        else if (markerIcon.equals("icon2"))
+            return R.drawable.marker;
+        else if (markerIcon.equals("icon3"))
+            return R.drawable.marker;
+        else if (markerIcon.equals("icon4"))
+            return R.drawable.marker;
+        else if (markerIcon.equals("icon5"))
+            return R.drawable.marker;
+        else if (markerIcon.equals("icon6"))
+            return R.drawable.marker;
+        else if (markerIcon.equals("icon7"))
+            return R.drawable.marker;
+        else
+            return R.drawable.marker;
+    }
+
+
+        public class MarkerInfoWindowAdapter implements GoogleMap.InfoWindowAdapter
+    {
+        public MarkerInfoWindowAdapter()
+        {
+        }
+
+        @Override
+        public View getInfoWindow(Marker marker)
+        {
+            return null;
+        }
+
+        @Override
+        public View getInfoContents(Marker marker)
+        {
+            View v  = getLayoutInflater().inflate(R.layout.marker_layout, null);
+
+            MyMarker myMarker = mMarkersHashMap.get(marker);
+            ImageView markerIcon = (ImageView) v.findViewById(R.id.iv_landmark);
+            Log.e("adapter","adapter");
+            TextView markerLabel = (TextView)v.findViewById(R.id.tv_landmark);
+
+            markerIcon.setImageResource(manageMarkerIcon(myMarker.getmIcon()));
+            markerLabel.setText(myMarker.getmLabel());
+
+
+            return v;
+        }
+    }
 }

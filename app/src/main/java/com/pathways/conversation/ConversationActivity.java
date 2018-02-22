@@ -3,11 +3,15 @@ package com.pathways.conversation;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Vibrator;
+import android.speech.RecognitionListener;
+import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -25,6 +29,7 @@ import com.pathways.R;
 import com.pathways.conversation.ui.ChatAdapter;
 import com.pathways.conversation.ui.UIIncomingChatMessage;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,14 +47,15 @@ import ai.api.model.Result;
  * Created by abhishek on 2/21/18.
  */
 
-public class ConversationActivity extends Activity implements AIListener, UtteranceCompleteListener {
+public class ConversationActivity extends Activity implements AIListener, UtteranceCompleteListener, RecognitionListener {
 
     private AIService aiService;
+    String message;
     private TextView resultTextView;
     private static final String TAG = ConversationActivity.class.getName();
     private Gson gson = GsonFactory.getGson();
     private static final int REQUEST_AUDIO_PERMISSIONS_ID = 33;
-
+    Intent recognizerIntent;
     private final String CLIENT_ACCESS_TOKEN = "a72af662d4e441eb87aead05e632b6d2";
     private final String DEFAULT_SPEECH = "";
     private boolean isListening = false;
@@ -65,8 +71,10 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.conversation_layout);
+        init();
         initViews();
         checkAudioRecordPermission();
+        SpeechRecognizer.createSpeechRecognizer(ConversationActivity.this).startListening(recognizerIntent);
     }
 
     private void initViews() {
@@ -140,7 +148,7 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
         if (aiService != null) {
             vibrate();
             audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
-            aiService.startListening();
+            //aiService.startListening();
         }
     }
 
@@ -227,13 +235,16 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
 
     private void StartListeningIfAlreadyNotStarted() {
         Handler handler = new Handler();
+
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
                 if (!isUttering && !isListening) {
                     vibrate();
                     audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
-                    aiService.startListening();
+                    //aiService.startListening();
+                    SpeechRecognizer.createSpeechRecognizer(ConversationActivity.this).startListening(recognizerIntent);
+
                 }
             }
         }, 3000);
@@ -248,8 +259,135 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
                 vibrate();
                 audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
                 isUttering = false;
-                aiService.startListening();
+               // aiService.startListening();
             }
         });
+    }
+
+
+    void init() {
+
+        SpeechRecognizer speech = SpeechRecognizer.createSpeechRecognizer(this);
+        speech.setRecognitionListener(this);
+        recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "en");
+        recognizerIntent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE,
+                this.getPackageName());
+        recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
+        recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
+    }
+
+    @Override
+    public void onReadyForSpeech(Bundle bundle) {
+
+    }
+
+    @Override
+    public void onBeginningOfSpeech() {
+
+    }
+
+    @Override
+    public void onRmsChanged(float v) {
+
+    }
+
+    @Override
+    public void onBufferReceived(byte[] bytes) {
+
+    }
+
+    @Override
+    public void onEndOfSpeech() {
+
+    }
+
+    @Override
+    public void onError(int i) {
+        switch (i) {
+
+            case SpeechRecognizer.ERROR_AUDIO:
+
+                message = "1";
+
+                break;
+
+            case SpeechRecognizer.ERROR_CLIENT:
+
+                message = "2";
+
+                break;
+
+            case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS:
+
+                message = "3";
+
+                break;
+
+            case SpeechRecognizer.ERROR_NETWORK:
+
+                message = "4";
+
+                break;
+
+            case SpeechRecognizer.ERROR_NETWORK_TIMEOUT:
+
+                message = "5";
+
+                break;
+
+            case SpeechRecognizer.ERROR_NO_MATCH:
+
+                message = "6";
+
+                break;
+
+            case SpeechRecognizer.ERROR_RECOGNIZER_BUSY:
+
+                message = "7";
+
+                break;
+
+            case SpeechRecognizer.ERROR_SERVER:
+
+                message = "8";
+
+                break;
+
+            case SpeechRecognizer.ERROR_SPEECH_TIMEOUT:
+
+                message = "9";
+
+                break;
+
+            default:
+
+                message = "10";
+
+                break;
+
+        }
+    }
+
+    @Override
+    public void onResults(Bundle bundle) {
+        ArrayList<String> matches = bundle
+                .getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+        if (matches != null) {
+            Log.i("speech", matches.toString());
+        }
+
+    }
+
+    @Override
+    public void onPartialResults(Bundle bundle) {
+
+    }
+
+
+    @Override
+    public void onEvent(int i, Bundle bundle) {
+
     }
 }
