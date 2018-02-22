@@ -13,9 +13,12 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.view.View;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.pathways.R;
@@ -53,9 +56,10 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
     private boolean isUttering = false;
     private ListView chatListView;
     private ChatAdapter adapter;
+    private ImageView imageView;
 
     private AudioManager audioManager;
-    private int currentVolume;
+    private int currentVolume = 50;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -66,12 +70,15 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
     }
 
     private void initViews() {
+        imageView = (ImageView) findViewById(R.id.conversation_image);
+        Glide.with(this).load(R.raw.giphy).into(imageView);
+        imageView.setVisibility(View.INVISIBLE);
         resultTextView = findViewById(R.id.conversation_text_view);
         chatListView = findViewById(R.id.chat_message_listview);
         adapter = new ChatAdapter(getApplicationContext());
         chatListView.setAdapter(adapter);
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+        // currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
     }
 
     private void initAISDK() {
@@ -122,6 +129,8 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
         super.onPause();
         if (aiService != null) {
             aiService.stopListening();
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, currentVolume, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
+
         }
     }
 
@@ -135,14 +144,6 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
         }
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-
-        if (aiService != null) {
-            aiService.stopListening();
-        }
-    }
 
     @Override
     public void onResult(final AIResponse response) {
@@ -192,6 +193,7 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
             @Override
             public void run() {
                 isListening = true;
+                imageView.setVisibility(View.VISIBLE);
                 resultTextView.setText("Listening Started");
             }
         });
@@ -202,7 +204,10 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                imageView.setVisibility(View.INVISIBLE);
                 resultTextView.setText("Listening Canceled");
+                isListening = false;
+                StartListeningIfAlreadyNotStarted();
             }
         });
     }
@@ -212,6 +217,7 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                imageView.setVisibility(View.INVISIBLE);
                 resultTextView.setText("Listening Finished");
                 isListening = false;
                 StartListeningIfAlreadyNotStarted();
@@ -230,7 +236,7 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
                     aiService.startListening();
                 }
             }
-        }, 5000);
+        }, 3000);
     }
 
     @Override

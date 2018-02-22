@@ -22,7 +22,7 @@
         android:layout_toRightOf="@+id/profile_imageview"
         android:background="@drawable/iris_leftchat">
 
-        <com.pathways.conversation.views.RobotoRegularTextView
+        <TextView
             android:id="@+id/message_textview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
