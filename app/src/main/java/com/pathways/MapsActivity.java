@@ -40,7 +40,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+import static com.pathways.TTS.init;
+
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,UtteranceCompleteListener {
 
     private static final float CAMERA_TILT = 90.0f;
     private GoogleMap mMap;
@@ -49,101 +51,186 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private double oldBearing = 0;
     private String jsonString = "[\n" +
             "  {\n" +
-            "    \"Event\": \"Beginning\",\n" +
+            "    \"Event\": \"Bristol Chawk\",\n" +
             "    \"Latitude\": 28.478886,\n" +
             "    \"Longitude\": 77.093913,\n" +
-            "    \"Commentary\": \"Golf Course Road starts from Bristol Chowk and goes up to Sector 56. It is a stretch of 6.7 kilometers around major localities of Gurgaon that is DLF Phase 1, DLF Phase 5, Sector 54, 56 and many more.\"\n" +
+            "    \"Commentary\": \"Hi, I am your personal assistant Pathways for site tour. I will be assisting you in reaching to DLF Camellias.\",\n" +
+            "    \"\": \"\"\n" +
             "  },\n" +
             "  {\n" +
-            "    \"Event\": \"Beginning\",\n" +
-            "    \"Latitude\": 28.478886,\n" +
-            "    \"Longitude\": 77.093913,\n" +
-            "    \"Commentary\": \"There are more than 170 real estate projects from 40+ Builers in Golf Course Road.\"\n" +
-            "  },\n" +
-            "  {\n" +
-            "    \"Event\": \"Landmark: DLF Mega Mall\",\n" +
-            "    \"Latitude\": 28.475849,\n" +
-            "    \"Longitude\": 77.093103,\n" +
-            "    \"Commentary\": \"The commercial space in Golf Course Road is quite prominent. You can see DLF Mega Mall on your right side which is one of the popular Mall in this locality.\"\n" +
-            "  },\n" +
-            "  {\n" +
-            "    \"Event\": \"Beginning\",\n" +
-            "    \"Latitude\": 28.478886,\n" +
-            "    \"Longitude\": 77.093913,\n" +
-            "    \"Commentary\": \"Prices for Properties in Golf Course Road ranges between 9 thousand and 18.5 thousands Indian Rupees per sqare feet for Buy and Rental in this area ranges between 50 thousand and 4 Lac Indian Rupees. The average price per square feet for this locality is 56% higher than the average price for entire city Gurgaon.\",\n" +
+            "    \"Event\": \"\",\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"Golf Course Road starts from Bristol Chowk and goes up to Sector 56. It is a stretch of 6.7 kilometers with major localities of Gurgaon that is DLF Phase 1, DLF Phase 5, Sector 54, 56 and many more.\",\n" +
             "    \"\": \"\"\n" +
             "  },\n" +
             "  {\n" +
             "    \"Event\": \"Beginning\",\n" +
-            "    \"Latitude\": 28.478886,\n" +
-            "    \"Longitude\": 77.093913,\n" +
-            "    \"Commentary\": \"The average price for this locality has witnessed a growth of 95% in last 10 years however a decline of 11% in last 5 years. The highest price has been 14.5 thousand per square feet here in 2015.\"\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"There are more than 170 real estate projects from more than 40 Builders on Golf Course Road.\",\n" +
+            "    \"\": \"\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"DLF Mega Mall\",\n" +
+            "    \"Latitude\": 28.475849,\n" +
+            "    \"Longitude\": 77.093103,\n" +
+            "    \"Commentary\": \"The commercial space in Golf Course Road is quite prominent. You can see DLF Mega Mall on your right side which is one of the popular Mall in this locality.\",\n" +
+            "    \"\": \"\"\n" +
             "  },\n" +
             "  {\n" +
             "    \"Event\": \"Beginning\",\n" +
-            "    \"Latitude\": 28.478886,\n" +
-            "    \"Longitude\": 77.093913,\n" +
-            "    \"Commentary\": \"The Golf Course Road has around 20 schools and more than 7 hospitals existing within 6.7 km of the area.\"\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"Prices for properties in Golf Course Road ranges between 9 thousands and 18.5 thousands Indian Rupees per square feet for Buy. The average price per square feet for this locality is 56% higher than the average price for entire Gurgaon city.\",\n" +
+            "    \"\": \"\"\n" +
             "  },\n" +
             "  {\n" +
             "    \"Event\": \"Beginning\",\n" +
-            "    \"Latitude\": 28.478886,\n" +
-            "    \"Longitude\": 77.093913,\n" +
-            "    \"Commentary\": \"This locality is known for its luxury service apartments and has easy proximity to the Delhi.\"\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"The average price for this locality has witnessed a growth of 95% in last 10 years however a decline of 11% in last 5 years. The highest price has been 14.5 thousands per square feet in 2015.\",\n" +
+            "    \"\": \"\"\n" +
             "  },\n" +
             "  {\n" +
-            "    \"Event\": \"Landmark: Sector 27 (on your right)\",\n" +
+            "    \"Event\": \"Beginning\",\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"The Golf Course Road has around 20 schools and more than 7 hospitals locating within 6.7 km of the area.\",\n" +
+            "    \"\": \"\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"Beginning\",\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"This locality is known for its luxury service apartments and has easy proximity to the Delhi.\",\n" +
+            "    \"\": \"\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"Sector 27\",\n" +
             "    \"Latitude\": 28.448394,\n" +
             "    \"Longitude\": 77.099961,\n" +
-            "    \"Commentary\": \"On your right side there is a Sector 27. It is a popular residential locality in Gurgaon which offers necessary civic and social infrastructures.\"\n" +
+            "    \"Commentary\": \"On your right side there is a Sector 27. It is a popular residential locality in Gurgaon which offers necessary civic and social infrastructures.\",\n" +
+            "    \"\": \"\"\n" +
             "  },\n" +
             "  {\n" +
-            "    \"Event\": \"Landmark: Sector 27 (on your right)\",\n" +
-            "    \"Latitude\": 28.448394,\n" +
-            "    \"Longitude\": 77.099961,\n" +
-            "    \"Commentary\": \"Average price for Sector 27 is 11 thousands for Buy and 42 thousands is average monthly rent in this locality.\"\n" +
+            "    \"Event\": \"Sector 27\",\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"Average price per square feet for Sector 27 is 11 thousands for Buy.\",\n" +
+            "    \"\": \"\"\n" +
             "  },\n" +
             "  {\n" +
-            "    \"Event\": \"Landmark: DLF Phase 1 (on your left)\",\n" +
+            "    \"Event\": \"DLF Phase 1\",\n" +
             "    \"Latitude\": 28.471041,\n" +
             "    \"Longitude\": 77.094151,\n" +
-            "    \"Commentary\": \"Now you are passing through DLF Phase 1 on your left side where the average price per sqaure feet for Buy is 16 thousand. The per square feet price ranges between 12 tweleve thousands and 26 thousands in this locality for Buy.\"\n" +
+            "    \"Commentary\": \"Now you are passing through DLF Phase 1 on your left side where the average price per square feet for Buy is 16 thousands. The per square feet price ranges between 12 thousands and 26 thousands in this locality.\",\n" +
+            "    \"\": \"\"\n" +
             "  },\n" +
             "  {\n" +
-            "    \"Event\": \"Landmark: DLF Phase 1 (on your left)\",\n" +
-            "    \"Latitude\": 28.471041,\n" +
-            "    \"Longitude\": 77.094151,\n" +
-            "    \"Commentary\": \"There has been an appreciation of 87% and 59% in price per square feet for DLF Phase 1 in last 10 years and 5 years respectively.\"\n" +
+            "    \"Event\": \"\",\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"There has been an appreciation of 87% and 59% in price per square feet for DLF Phase 1 in last 10 years and 5 years respectively.\",\n" +
+            "    \"\": \"\"\n" +
             "  },\n" +
             "  {\n" +
-            "    \"Event\": \"Landmark: Sector 42-43 Rapid Metro Station\",\n" +
+            "    \"Event\": \"Sector 42-43 Rapid Metro Station\",\n" +
             "    \"Latitude\": 28.457416,\n" +
             "    \"Longitude\": 77.096955,\n" +
-            "    \"Commentary\": \"Here you are passing through Rapid Metro station Sector 42-43. Rapid Metro started on Golf Course Road since November 2013. It has a total length of 11.7 kilometers which connects all major sectors of Golf Course Road with center of the city and further with Delhi.\"\n" +
+            "    \"Commentary\": \"Here you are passing through Rapid Metro station Sector 42-43. Rapid Metro started on Golf Course Road in November 2013. It has a total length of 11.7 kilometers which connects all major sectors of Golf Course Road with center of the city and further with near by city, Delhi.\",\n" +
+            "    \"\": \"\"\n" +
             "  },\n" +
             "  {\n" +
-            "    \"Event\": \"Landmark: Sector 42-43 Rapid Metro Station\",\n" +
-            "    \"Latitude\": 28.457416,\n" +
-            "    \"Longitude\": 77.096955,\n" +
-            "    \"Commentary\": \"Sector 43 on your left has shown a price appreciation of 155% in last 10 years but a decline of 11% in last 5 years for buy.\"\n" +
+            "    \"Event\": \"\",\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"Sector 43 on your left has shown a price appreciation of 155% in last 10 years but a decline of 11% in last 5 years for buy.\",\n" +
+            "    \"\": \"\"\n" +
             "  },\n" +
             "  {\n" +
-            "    \"Event\": \"Landmark: Sector 42-43 Rapid Metro Station\",\n" +
-            "    \"Latitude\": 28.457416,\n" +
-            "    \"Longitude\": 77.096955,\n" +
-            "    \"Commentary\": \"The average price per square feet in Sector 43 is 10 thousand 8 hundred.\"\n" +
+            "    \"Event\": \"\",\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"The average price per square feet in Sector 43 is 10 thousand 8 hundred Indian Rupees.\",\n" +
+            "    \"\": \"\"\n" +
             "  },\n" +
             "  {\n" +
-            "    \"Event\": \"Landmark: Sector 42-43 Rapid Metro Station\",\n" +
-            "    \"Latitude\": 28.457416,\n" +
-            "    \"Longitude\": 77.096955,\n" +
-            "    \"Commentary\": \"There are around 20 residential projects in this locality including popular projects like DLF The Icon, DLF Pinnacle and Ansal Maple Heights\"\n" +
+            "    \"Event\": \"\",\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"There are around 20 residential projects in this locality including popular projects like DLF The Icon, DLF Pinnacle and Ansal Maple Heights.\",\n" +
+            "    \"\": \"\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"DLF Camellias\",\n" +
+            "    \"Latitude\": 28.449882,\n" +
+            "    \"Longitude\": 77.0960453,\n" +
+            "    \"Commentary\": \"Hey now you are reaching your destination DLF Camellias in Sector 42.\",\n" +
+            "    \"\": \"\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"\",\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"DLF Camellias is a residential project by DLF Group offering all modern amenities like an exclusive club with swimming pool, steam and sauna facilities, Joggers Park, Tennis and Squash courts and other leisure and fitness facilities.\",\n" +
+            "    \"\": \"\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"\",\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"It is spread across 18 acres of land with 75% of green space.\",\n" +
+            "    \"\": \"\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"\",\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"The project is offering 12 hundred flats with 4,5 and 6 BHK in 16 Towers of 39 floors each.\",\n" +
+            "    \"\": \"\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"\",\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"and the flats sizes range between 7196 and 7400 squate feet. The price of flats starts from 195 million and goes up to 257 millions per flat in DLF Camellias.\",\n" +
+            "    \"\": \"\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"\",\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"It was launched in 2014 at a price of 25 thousand 5 hunder per square feet which has been appreciated by 6% as of date and presently hovering around 27 thousands.\",\n" +
+            "    \"\": \"\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"\",\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"DLF Camellias has close proximity to schools, hospitals, banks, malls and metro stations.\",\n" +
+            "    \"\": \"\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"\",\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"Paras Hospital is located at 3.4 kilometers from the project. Delhi Public School is situated at the distance of 6 kilometers and nearest bank is just a 2.4 kilometers away.\",\n" +
+            "    \"\": \"\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"Event\": \"\",\n" +
+            "    \"Latitude\": \"do\",\n" +
+            "    \"Longitude\": \"do\",\n" +
+            "    \"Commentary\": \"We are ending our site tour here. Please let me know if you want to know more about the project.\",\n" +
+            "    \"\": \"\"\n" +
             "  }\n" +
             "]";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        initTTS();
         setContentView(R.layout.activity_maps);
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -154,7 +241,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         LatLng origin = new LatLng(28.480888, 77.094385);
-        LatLng destination = new LatLng(28.450810, 77.099537);
+        LatLng destination = new LatLng(28.449882, 77.0960453);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(origin, 17));
 
         MarkerOptions options = new MarkerOptions();
@@ -167,6 +254,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         DownloadTask downloadTask = new DownloadTask();
         downloadTask.execute(url);
        // addMarker(origin,R.color.icon_orange_color,false);
+    }
+
+    @Override
+    public void onUtteranceComplete() {
+
     }
 
     private class DownloadTask extends AsyncTask<String, Void, String> {
@@ -306,6 +398,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
     }
 
+
+    void initTTS() {
+         TTS.init(this, this);
+    }
+
+    private void  speak(String speech) {
+        TTS.speak(speech);
+    }
+
+
     private void onMarkerLocationChange(final LatLng startPosition, final LatLng nextPosition, final Marker mMarker, final int duration) {
 
         final Handler handler =  new Handler();
@@ -402,7 +504,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 try {
                     Speakerbox speakerbox = new Speakerbox(getApplication());
                     JSONObject jsonObject = new JSONObject(jsonArray.get(position).toString());
-                    speakerbox.play(jsonObject.getString("Commentary"));
+                  //  speakerbox.play(jsonObject.getString("Commentary"));
+                    speak(jsonObject.getString("Commentary"));
                     if(!jsonObject.get("Latitude").equals("do") ||!jsonObject.get("Longitude").equals("do")) {
                         LatLng marker = new LatLng((double) jsonObject.get("Latitude"), (double) jsonObject.get("Longitude"));
                         addMarker(marker, R.color.icon_orange_color, false, jsonObject.getString("Event"));
@@ -428,6 +531,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Marker pinnedMarker = mMap.addMarker(markerOptions);
         pinnedMarker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.info_marker));
         pinnedMarker.setTitle(title);
+        pinnedMarker.showInfoWindow();
         startDropMarkerAnimation(pinnedMarker);
         return pinnedMarker;
     }
@@ -457,6 +561,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
             }
         });
+    }
+
+    private double meterDistanceBetweenPoints(float lat_a, float lng_a, float lat_b, float lng_b) {
+        float pk = (float) (180.f/Math.PI);
+
+        float a1 = lat_a / pk;
+        float a2 = lng_a / pk;
+        float b1 = lat_b / pk;
+        float b2 = lng_b / pk;
+
+        double t1 = Math.cos(a1) * Math.cos(a2) * Math.cos(b1) * Math.cos(b2);
+        double t2 = Math.cos(a1) * Math.sin(a2) * Math.cos(b1) * Math.sin(b2);
+        double t3 = Math.sin(a1) * Math.sin(b1);
+        double tt = Math.acos(t1 + t2 + t3);
+
+        return 6366000 * tt;
     }
 
 }

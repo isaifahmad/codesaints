@@ -65,7 +65,7 @@ public class TTS {
         if(Build.VERSION.SDK_INT >= 21) {
             Bundle params = new Bundle();
             params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "MessageId");
-            textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, params, "123");
+            textToSpeech.speak(text, TextToSpeech.QUEUE_ADD, params, "123");
         }
     }
 }
