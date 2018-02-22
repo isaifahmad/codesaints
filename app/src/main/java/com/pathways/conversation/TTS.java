@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-package com.pathways;
+package com.pathways.conversation;
 
 import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
-import android.util.Log;
-
-import java.util.HashMap;
 
 public class TTS {
 
@@ -68,7 +65,7 @@ public class TTS {
         if(Build.VERSION.SDK_INT >= 21) {
             Bundle params = new Bundle();
             params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "MessageId");
-            textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, params, "123");
+            textToSpeech.speak(text, TextToSpeech.QUEUE_ADD, params, "123");
         }
     }
 }
