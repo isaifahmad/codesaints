@@ -3,11 +3,11 @@ package com.pathways;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.support.annotation.ColorRes;
 import android.support.v4.app.FragmentActivity;
-import android.os.Bundle;
 import android.support.v4.view.animation.LinearOutSlowInInterpolator;
 import android.util.Log;
 import android.view.animation.AccelerateDecelerateInterpolator;
@@ -25,6 +25,8 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.mapzen.speakerbox.Speakerbox;
+import com.pathways.conversation.TTS;
+import com.pathways.conversation.UtteranceCompleteListener;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -37,18 +39,19 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
-import static com.pathways.TTS.init;
-
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,UtteranceCompleteListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, UtteranceCompleteListener {
 
     private static final float CAMERA_TILT = 90.0f;
     private GoogleMap mMap;
-    private List<PolylinePoint> polylinePoints= new ArrayList<>();
+    private List<PolylinePoint> polylinePoints = new ArrayList<>();
     private Marker userMarker;
     private double oldBearing = 0;
+    List<LatLongObject> data = new ArrayList<>();
+    PolylinePoint currentPosition;
+    boolean isSpeaking = false;
+
     private String jsonString = "[\n" +
             "  {\n" +
             "    \"Event\": \"Bristol Chawk\",\n" +
@@ -231,17 +234,76 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         initTTS();
+        constructObject();
         setContentView(R.layout.activity_maps);
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
     }
 
+    private void constructObject() {
+        LatLongObject object = new LatLongObject();
+        object.setLat(28.478886);
+        object.setLog(77.093913);
+        object.setLabel("Bristol Chawk");
+        List<String> list = new ArrayList<>();
+        list.add("Hi, I am your personal assistant Pathways for site tour. I will be assisting you in reaching to DLF Camellias.");
+        object.setSpeechList(list);
+
+
+        data.add(object);
+        object = new LatLongObject();
+        object.setLat(28.475849);
+        object.setLog(77.093103);
+        object.setLabel("DLF Mega Mall");
+        list = new ArrayList<>();
+        list.add("The commercial space in Golf Course Road is quite prominent. You can see DLF Mega Mall on your right side which is one of the popular Mall in this locality.");
+        object.setSpeechList(list);
+
+        data.add(object);
+        object = new LatLongObject();
+        object.setLat(28.471313);
+        object.setLog(77.093897);
+        object.setLabel("DLF Phase 1");
+        list = new ArrayList<>();
+        list.add("Now you are passing through DLF Phase 1 on your left side where the average price per square feet for Buy is 16 thousands. The per square feet price ranges between 12 thousands and 26 thousands in this locality.");
+        object.setSpeechList(list);
+
+        data.add(object);
+        object = new LatLongObject();
+        object.setLat(28.466140);
+        object.setLog(77.094125);
+        object.setLabel("Sector 27");
+        list = new ArrayList<>();
+        list.add("On your right side there is a Sector 27. It is a popular residential locality in Gurgaon which offers necessary civic and social infrastructures.");
+        object.setSpeechList(list);
+
+        data.add(object);
+        object = new LatLongObject();
+        object.setLat(28.457448);
+        object.setLog(77.096944);
+        object.setLabel("Sector 42-43 Rapid Metro Station");
+        list = new ArrayList<>();
+        list.add("Here you are passing through Rapid Metro station Sector 42-43. Rapid Metro started on Golf Course Road in November 2013. It has a total length of 11.7 kilometers which connects all major sectors of Golf Course Road with center of the city and further with near by city, Delhi.");
+        object.setSpeechList(list);
+
+        data.add(object);
+        object = new LatLongObject();
+        object.setLat(28.450810);
+        object.setLog(77.099537);
+        object.setLabel("DLF Camellias");
+        list = new ArrayList<>();
+        list.add("Hey now you are reaching your destination DLF Camellias in Sector 42.");
+        object.setSpeechList(list);
+
+        data.add(object);
+    }
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         LatLng origin = new LatLng(28.480888, 77.094385);
-        LatLng destination = new LatLng(28.449882, 77.0960453);
+        LatLng destination = new LatLng(28.450810, 77.099537);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(origin, 17));
 
         MarkerOptions options = new MarkerOptions();
@@ -253,12 +315,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         String url = getDirectionsUrl(origin, destination);
         DownloadTask downloadTask = new DownloadTask();
         downloadTask.execute(url);
-       // addMarker(origin,R.color.icon_orange_color,false);
+        // addMarker(origin,R.color.icon_orange_color,false);
     }
 
     @Override
     public void onUtteranceComplete() {
-
+        isSpeaking = false;
     }
 
     private class DownloadTask extends AsyncTask<String, Void, String> {
@@ -310,15 +372,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         @Override
         protected void onPostExecute(List<PolylinePoint> result) {
-            if(null==result || result.isEmpty()){
+            if (null == result || result.isEmpty()) {
                 return;
             }
 
             PolylineOptions lineOptions = null;
             List<LatLng> points = new ArrayList<>();
-            if(null==polylinePoints){
+            if (null == polylinePoints) {
                 polylinePoints = new ArrayList<>();
-            }else {
+            } else {
                 polylinePoints.clear();
             }
 
@@ -340,25 +402,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 lineOptions.geodesic(true);
             }
 
-            if(null!=lineOptions) {
+            if (null != lineOptions) {
                 mMap.addPolyline(lineOptions);
             }
-            playSpeech(0);
             emulateMarkerMove(0);
         }
     }
 
-    private void initMapDirection(){
-        if(polylinePoints.isEmpty()){
+    private void initMapDirection() {
+        if (polylinePoints.isEmpty()) {
             return;
         }
         PolylinePoint firstPoint = polylinePoints.get(0);
         PolylinePoint secondPoint = polylinePoints.get(1);
         realignMap(firstPoint, secondPoint);
     }
-    private void emulateMarkerMove(final int currentEmulatedLocation){
-        if(currentEmulatedLocation == polylinePoints.size()) {
+
+    private void emulateMarkerMove(final int currentEmulatedLocation) {
+        if (currentEmulatedLocation == polylinePoints.size()) {
             return;
+        }
+        if (getNextPoint() != null && shouldStartSpeech(getNextPoint()) && !isSpeaking) {
+            LatLng marker = new LatLng((double) getNextPoint().getLat(), getNextPoint().getLog());
+            addMarker(marker, R.color.icon_orange_color, false, getNextPoint().getLabel());
+            speak(getCommentory(getNextPoint()));
+            getNextPoint().setPassed(true);
+            isSpeaking = true;
         }
 
         final int duration = polylinePoints.get(currentEmulatedLocation).duration;
@@ -370,15 +439,40 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             public void run() {
                 PolylinePoint nextPosition = polylinePoints.get(currentEmulatedLocation);
 
-                if(currentEmulatedLocation > 0) {
-                    PolylinePoint currentPosition = polylinePoints.get(currentEmulatedLocation-1);
+                if (currentEmulatedLocation > 0) {
+                    currentPosition = polylinePoints.get(currentEmulatedLocation - 1);
                     onMarkerLocationChange(currentPosition.latLng, nextPosition.latLng, userMarker, duration);
                     realignMap(currentPosition, nextPosition);
                 }
 
-                emulateMarkerMove(currentEmulatedLocation+1);
+                emulateMarkerMove(currentEmulatedLocation + 1);
             }
         }, duration);
+    }
+
+    private String getCommentory(LatLongObject nextPoint) {
+        return nextPoint.getSpeechList().get(0);
+    }
+
+    private boolean shouldStartSpeech(LatLongObject nextPoint) {
+        if (nextPoint != null && nextPoint.getLat() > 0.0 && nextPoint.getLog() > 0.0 &&
+                currentPosition != null && currentPosition.latLng != null && currentPosition.latLng.latitude > 0.0 &&
+                currentPosition.latLng.longitude > 0.0) {
+            double distance = meterDistanceBetweenPoints(nextPoint.getLat(), nextPoint.getLog(), currentPosition.latLng.latitude, currentPosition.latLng.longitude);
+            return distance < 250;
+        }
+        return false;
+    }
+
+    private LatLongObject getNextPoint() {
+        LatLongObject newObject = null;
+        for (LatLongObject object : data) {
+            if (!object.isPassed()) {
+                newObject = object;
+                break;
+            }
+        }
+        return newObject;
     }
 
     public void realignMap(PolylinePoint currentPoint, PolylinePoint nextPoint) {
@@ -400,17 +494,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
     void initTTS() {
-         TTS.init(this, this);
+        TTS.init(this, this);
     }
 
-    private void  speak(String speech) {
+    private void speak(String speech) {
         TTS.speak(speech);
     }
 
 
     private void onMarkerLocationChange(final LatLng startPosition, final LatLng nextPosition, final Marker mMarker, final int duration) {
 
-        final Handler handler =  new Handler();
+        final Handler handler = new Handler();
         final long start = SystemClock.uptimeMillis();
         final Interpolator interpolator = new AccelerateDecelerateInterpolator();
         final float durationInMs = duration;
@@ -494,27 +588,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return data;
     }
 
-    private void playSpeech(final int position){
+    private void playSpeech(final int position) {
         try {
-        final JSONArray jsonArray = new JSONArray(jsonString);
-        final Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Speakerbox speakerbox = new Speakerbox(getApplication());
-                    JSONObject jsonObject = new JSONObject(jsonArray.get(position).toString());
-                  //  speakerbox.play(jsonObject.getString("Commentary"));
-                    speak(jsonObject.getString("Commentary"));
-                    if(!jsonObject.get("Latitude").equals("do") ||!jsonObject.get("Longitude").equals("do")) {
-                        LatLng marker = new LatLng((double) jsonObject.get("Latitude"), (double) jsonObject.get("Longitude"));
-                        addMarker(marker, R.color.icon_orange_color, false, jsonObject.getString("Event"));
-                    }
-                }catch (JSONException e){
+            final JSONArray jsonArray = new JSONArray(jsonString);
+            final Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Speakerbox speakerbox = new Speakerbox(getApplication());
+                        JSONObject jsonObject = new JSONObject(jsonArray.get(position).toString());
+                        //  speakerbox.play(jsonObject.getString("Commentary"));
+                        speak(jsonObject.getString("Commentary"));
+                        if (!jsonObject.get("Latitude").equals("do") || !jsonObject.get("Longitude").equals("do")) {
+                            LatLng marker = new LatLng((double) jsonObject.get("Latitude"), (double) jsonObject.get("Longitude"));
+                            addMarker(marker, R.color.icon_orange_color, false, jsonObject.getString("Event"));
+                        }
+                    } catch (JSONException e) {
 
+                    }
+                    // playSpeech(position + 1);
                 }
-                playSpeech(position+1);
-            }},4000);
+            }, 4000);
 
         } catch (JSONException e) {
             e.printStackTrace();
@@ -523,10 +618,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
 
-    protected Marker addMarker(LatLng position, @ColorRes int color, boolean draggable , String title) {
+    protected Marker addMarker(LatLng position, @ColorRes int color, boolean draggable, String title) {
         MarkerOptions markerOptions = new MarkerOptions();
         markerOptions.draggable(draggable);
-       // markerOptions.icon(MapUtils.getIconBitmapDescriptor(getActivity(), color));
+        // markerOptions.icon(MapUtils.getIconBitmapDescriptor(getActivity(), color));
         markerOptions.position(position);
         Marker pinnedMarker = mMap.addMarker(markerOptions);
         pinnedMarker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.info_marker));
@@ -563,13 +658,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
     }
 
-    private double meterDistanceBetweenPoints(float lat_a, float lng_a, float lat_b, float lng_b) {
-        float pk = (float) (180.f/Math.PI);
+    private double meterDistanceBetweenPoints(double lat_a, double lng_a, double lat_b, double lng_b) {
+        float pk = (float) (180.f / Math.PI);
 
-        float a1 = lat_a / pk;
-        float a2 = lng_a / pk;
-        float b1 = lat_b / pk;
-        float b2 = lng_b / pk;
+        double a1 = lat_a / pk;
+        double a2 = lng_a / pk;
+        double b1 = lat_b / pk;
+        double b2 = lng_b / pk;
 
         double t1 = Math.cos(a1) * Math.cos(a2) * Math.cos(b1) * Math.cos(b2);
         double t2 = Math.cos(a1) * Math.sin(a2) * Math.cos(b1) * Math.sin(b2);
