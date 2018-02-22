@@ -1,14 +1,12 @@
 package com.pathways;
 
 import android.graphics.Color;
-import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.Interpolator;
 
@@ -19,7 +17,6 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -98,14 +95,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     /**
      * A class to parse the Google Places in JSON format
      */
-    private class ParserTask extends AsyncTask<String, Integer, List<List<PolylinePoint>>> {
+    private class ParserTask extends AsyncTask<String, Integer, List<PolylinePoint>> {
 
         // Parsing the data in non-ui thread
         @Override
-        protected List<List<PolylinePoint>> doInBackground(String... jsonData) {
+        protected List<PolylinePoint> doInBackground(String... jsonData) {
 
             JSONObject jObject;
-            List<List<PolylinePoint>> routes = null;
+            List<PolylinePoint> routes = null;
 
             try {
                 jObject = new JSONObject(jsonData[0]);
@@ -119,25 +116,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
         @Override
-        protected void onPostExecute(List<List<PolylinePoint>> result) {
+        protected void onPostExecute(List<PolylinePoint> result) {
+            if(null==result || result.isEmpty()){
+                return;
+            }
             PolylineOptions lineOptions = null;
             List<LatLng> points = new ArrayList<>();
             if(null==polylinePoints){
-                polylinePoints = new ArrayList<PolylinePoint>();
+                polylinePoints = new ArrayList<>();
             }else {
                 polylinePoints.clear();
             }
 
+            polylinePoints.addAll(result);
+
+            initMapDirection();
+
             for (int i = 0; i < result.size(); i++) {
                 lineOptions = new PolylineOptions();
 
-                List<PolylinePoint> path = result.get(i);
-
-                for (int j = 0; j < path.size(); j++) {
-                    PolylinePoint point = path.get(j);
-                    points.add(point.latLng);
-                    polylinePoints.add(point);
-                }
+                PolylinePoint point = result.get(i);
+                points.add(point.latLng);
 
                 lineOptions.addAll(points);
                 lineOptions.width(24);
@@ -153,23 +152,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    private void initMapDirection(){
+        if(polylinePoints.isEmpty()){
+            return;
+        }
+        PolylinePoint firstPoint = polylinePoints.get(0);
+        PolylinePoint secondPoint = polylinePoints.get(1);
+        realignMap(firstPoint, secondPoint);
+    }
     private void emulateMarkerMove(final int currentEmulatedLocation){
         if(currentEmulatedLocation == polylinePoints.size()) {
             return;
         }
 
         final int duration = polylinePoints.get(currentEmulatedLocation).duration;
-        Log.e("emulateMarkerMove : ", " " + duration);
         final Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                LatLng currentLocation = polylinePoints.get(currentEmulatedLocation).latLng;
+                PolylinePoint nextPosition = polylinePoints.get(currentEmulatedLocation);
 
                 if(currentEmulatedLocation > 0) {
-                    LatLng lastLocation = polylinePoints.get(currentEmulatedLocation-1).latLng;
-                    animatedMarker(lastLocation, currentLocation, userMarker, duration);
-                    OnLocationChange(currentLocation, lastLocation);
+                    PolylinePoint currentPosition = polylinePoints.get(currentEmulatedLocation-1);
+                    onMarkerLocationChange(currentPosition.latLng, nextPosition.latLng, userMarker, duration);
+                    realignMap(currentPosition, nextPosition);
                 }
 
                 emulateMarkerMove(currentEmulatedLocation+1);
@@ -177,46 +183,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }, duration);
     }
 
-    public void OnLocationChange(LatLng location, LatLng lastLocation) {
+    public void realignMap(PolylinePoint currentPoint, PolylinePoint nextPoint) {
 
-        if (mMap == null || location == null) {
+        if (mMap == null || currentPoint == null || nextPoint == null) {
             return;
-        }
-
-        double bearing = 0;
-        if(lastLocation != null){
-
-            double lat1 = lastLocation.latitude;
-            double lng1 = lastLocation.longitude;
-
-            double lat2 = location.latitude;
-            double lng2 = location.longitude;
-
-            double dLon = (lng2-lng1);
-            double y = Math.sin(dLon) * Math.cos(lat2);
-            double x = Math.cos(lat1)*Math.sin(lat2) - Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
-            bearing = Math.toDegrees((Math.atan2(y, x)));
-            if(bearing != 0) {
-                bearing = (360 - ((bearing + 360) % 360));
-            }else{
-                bearing = oldBearing;
-            }
-            oldBearing = bearing;
         }
 
         CameraPosition cameraPosition = CameraPosition.builder().
                 tilt(CAMERA_TILT).
-                bearing((float) bearing).
+                bearing((float) nextPoint.bearing).
                 zoom(mMap.getCameraPosition().zoom).
-                target(location).
+                target(nextPoint.latLng).
                 build();
 
 
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
     }
 
-    private void animatedMarker(final LatLng startPosition,final LatLng nextPosition,final Marker mMarker, final int duration) {
-        Log.e("animatedMarker : ", " " + duration);
+    private void onMarkerLocationChange(final LatLng startPosition, final LatLng nextPosition, final Marker mMarker, final int duration) {
 
         final Handler handler =  new Handler();
         final long start = SystemClock.uptimeMillis();

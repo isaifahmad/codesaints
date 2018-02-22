@@ -16,9 +16,9 @@ import java.util.List;
 public class DirectionsJSONParser {
 
     /** Receives a JSONObject and returns a list of lists containing latitude and longitude */
-    public List<List<PolylinePoint>> parse(JSONObject jObject){
+    public List<PolylinePoint> parse(JSONObject jObject){
 
-        List<List<PolylinePoint>> routes = new ArrayList<List<PolylinePoint>>() ;
+        List<PolylinePoint> routes = new ArrayList<>() ;
         JSONArray jRoutes = null;
         JSONArray jLegs = null;
         JSONArray jSteps = null;
@@ -30,8 +30,6 @@ public class DirectionsJSONParser {
             /** Traversing all routes */
             for(int i=0;i<jRoutes.length();i++){
                 jLegs = ( (JSONObject)jRoutes.get(i)).getJSONArray("legs");
-//                List path = new ArrayList<HashMap<String, String>>();
-                List<PolylinePoint> path = new ArrayList<>();
 
                 /** Traversing all legs */
                 for(int j=0;j<jLegs.length();j++){
@@ -50,10 +48,9 @@ public class DirectionsJSONParser {
                             PolylinePoint polylinePoint = new PolylinePoint();
                             polylinePoint.duration = polylinePointDuration;
                             polylinePoint.latLng = (LatLng) list.get(l);
-                            path.add(polylinePoint);
+                            routes.add(polylinePoint);
                         }
                     }
-                    routes.add(path);
                 }
             }
 
@@ -62,7 +59,43 @@ public class DirectionsJSONParser {
         }catch (Exception e){
         }
 
+        routes = calculateBearing(routes);
         return routes;
+    }
+
+    private List<PolylinePoint> calculateBearing(List<PolylinePoint> polylinePoints){
+        if(null==polylinePoints){
+            return polylinePoints;
+        }
+
+        double bearing = 0;
+        double oldBearing = 0;
+        polylinePoints.get(0).bearing = bearing;
+        for(int i=0; i<polylinePoints.size()-1; i++){
+
+            double lat1 = polylinePoints.get(i).latLng.latitude;
+            double lng1 = polylinePoints.get(i).latLng.longitude;
+
+            double lat2 = polylinePoints.get(i+1).latLng.latitude;
+            double lng2 = polylinePoints.get(i+1).latLng.longitude;
+
+            double dLon = (lng2-lng1);
+            double y = Math.sin(dLon) * Math.cos(lat2);
+            double x = Math.cos(lat1)*Math.sin(lat2) - Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
+            bearing = Math.toDegrees((Math.atan2(y, x)));
+            if(bearing != 0) {
+                bearing = (360 - ((bearing + 360) % 360));
+            }else{
+                bearing = oldBearing;
+            }
+            oldBearing = bearing;
+            polylinePoints.get(i+1).bearing = bearing;
+        }
+
+        //TODO If bearing deviation is sharp, like more then 10 and that deviation doesn't last for more then 3 polylinePoints then interpolate with 4th bearing
+
+
+        return polylinePoints;
     }
 
     /**

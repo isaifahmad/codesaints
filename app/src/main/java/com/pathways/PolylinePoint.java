@@ -9,5 +9,5 @@ import com.google.android.gms.maps.model.LatLng;
 public class PolylinePoint {
     public LatLng latLng;
     public int duration;
-
+    public double bearing;
 }
