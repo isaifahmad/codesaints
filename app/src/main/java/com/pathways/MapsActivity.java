@@ -1,7 +1,9 @@
 package com.pathways;
 
+import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.media.AudioManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -10,8 +12,10 @@ import android.support.annotation.ColorRes;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.animation.LinearOutSlowInInterpolator;
 import android.util.Log;
+import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.Interpolator;
+import android.widget.ImageView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -51,6 +55,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     List<LatLongObject> data = new ArrayList<>();
     PolylinePoint currentPosition;
     boolean isSpeaking = false;
+    private AudioManager audioManager;
+    public int currentEmulatedLoc;
 
     private String jsonString = "[\n" +
             "  {\n" +
@@ -229,6 +235,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             "    \"\": \"\"\n" +
             "  }\n" +
             "]";
+    private ImageView button;
+    private boolean isPaused = false;
+    private int currentVolume = 50;
+    private Handler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -236,6 +246,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         initTTS();
         constructObject();
         setContentView(R.layout.activity_maps);
+        button = (ImageView) findViewById(R.id.button);
+        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                isPaused = !isPaused;
+                if (!isPaused) {
+                    button.setImageResource(R.drawable.if_music_pause_stop_control_play_blue_1872770);
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, currentVolume, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
+                    emulateMarkerMove(currentEmulatedLoc);
+                } else {
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
+                    button.setImageResource(R.drawable.if_music_play_pause_control_go_arrow_blue_1872769);
+                    handler.removeCallbacksAndMessages(null);
+                }
+            }
+        });
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
@@ -313,39 +340,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         userMarker = mMap.addMarker(options);
 
         String url = getDirectionsUrl(origin, destination);
-        DownloadTask downloadTask = new DownloadTask();
-        downloadTask.execute(url);
-        // addMarker(origin,R.color.icon_orange_color,false);
+        ParserTask parserTask = new ParserTask();
+        parserTask.execute();
     }
 
     @Override
     public void onUtteranceComplete() {
         isSpeaking = false;
     }
-
-    private class DownloadTask extends AsyncTask<String, Void, String> {
-
-        @Override
-        protected String doInBackground(String... url) {
-
-            String data = "";
-            try {
-                data = downloadUrl(url[0]);
-            } catch (Exception e) {
-                Log.d("Background Task", e.toString());
-            }
-            return data;
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            super.onPostExecute(result);
-
-            ParserTask parserTask = new ParserTask();
-            parserTask.execute(result);
-        }
-    }
-
 
     /**
      * A class to parse the Google Places in JSON format
@@ -360,7 +362,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             List<PolylinePoint> routes = null;
 
             try {
-                jObject = new JSONObject(jsonData[0]);
+                jObject = new JSONObject(Constants.directionJson);
                 DirectionsJSONParser parser = new DirectionsJSONParser();
 
                 routes = parser.parse(jObject);
@@ -433,19 +435,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         final int duration = polylinePoints.get(currentEmulatedLocation).duration;
         Log.e("emulateMarkerMove : ", " " + duration);
 
-        final Handler handler = new Handler();
+        handler = new Handler();
         handler.postDelayed(new Runnable() {
+
             @Override
             public void run() {
-                PolylinePoint nextPosition = polylinePoints.get(currentEmulatedLocation);
+                Log.i("Maps", "" + isPaused);
+                if (!isPaused) {
+                    PolylinePoint nextPosition = polylinePoints.get(currentEmulatedLocation);
 
-                if (currentEmulatedLocation > 0) {
-                    currentPosition = polylinePoints.get(currentEmulatedLocation - 1);
-                    onMarkerLocationChange(currentPosition.latLng, nextPosition.latLng, userMarker, duration);
-                    realignMap(currentPosition, nextPosition);
+                    if (currentEmulatedLocation > 0) {
+                        currentPosition = polylinePoints.get(currentEmulatedLocation - 1);
+                        onMarkerLocationChange(currentPosition.latLng, nextPosition.latLng, userMarker, duration);
+                        realignMap(currentPosition, nextPosition);
+                    }
+                    currentEmulatedLoc = currentEmulatedLocation + 1;
+                    Log.i("Maps", "" + currentEmulatedLocation);
+                    emulateMarkerMove(currentEmulatedLocation + 1);
                 }
-
-                emulateMarkerMove(currentEmulatedLocation + 1);
             }
         }, duration);
     }
