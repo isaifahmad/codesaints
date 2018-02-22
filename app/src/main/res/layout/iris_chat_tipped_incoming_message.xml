@@ -1,0 +1,39 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/messageuser"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="3dp">
+
+    <com.pathways.conversation.views.CircularImageView
+        android:id="@+id/profile_imageview"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="12dp"
+        android:src="@drawable/placeholder_agent"
+        android:visibility="visible" />
+
+    <com.pathways.conversation.views.IrisChatMessageViewGroup
+        android:id="@+id/message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:layout_marginTop="3dp"
+        android:layout_toRightOf="@+id/profile_imageview"
+        android:background="@drawable/iris_leftchat">
+
+        <com.pathways.conversation.views.RobotoRegularTextView
+            android:id="@+id/message_textview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxWidth="@dimen/chat_display_text_max_width"
+            android:paddingBottom="10dp"
+            android:paddingLeft="17dp"
+            android:paddingRight="20dp"
+            android:paddingTop="10dp"
+            android:textColor="#000000"
+            android:textSize="14sp" />
+
+    </com.pathways.conversation.views.IrisChatMessageViewGroup>
+
+</RelativeLayout>
