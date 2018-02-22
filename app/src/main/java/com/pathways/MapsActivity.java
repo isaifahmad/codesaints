@@ -1,6 +1,7 @@
 package com.pathways;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.media.AudioManager;
@@ -30,6 +31,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.mapzen.speakerbox.Speakerbox;
+import com.pathways.conversation.ConversationActivity;
 import com.pathways.conversation.TTS;
 import com.pathways.conversation.UtteranceCompleteListener;
 
@@ -58,6 +60,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     boolean isSpeaking = false;
     private AudioManager audioManager;
     public int currentEmulatedLoc;
+    private String currentLabel;
 
     private String jsonString = "[\n" +
             "  {\n" +
@@ -359,6 +362,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onUtteranceComplete() {
         isSpeaking = false;
+        if (currentLabel.equalsIgnoreCase("DLF Camellias")) {
+            Intent intent = new Intent(MapsActivity.this, ConversationActivity.class);
+            startActivity(intent);
+        }
     }
 
     /**
@@ -440,6 +447,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if (!TextUtils.isEmpty(getNextPoint().getLabel())) {
                 LatLng marker = new LatLng((double) getNextPoint().getLat(), getNextPoint().getLog());
                 addMarker(marker, R.color.icon_orange_color, false, getNextPoint().getLabel());
+                currentLabel = getNextPoint().getLabel();
             }
             speak(getCommentory(getNextPoint()));
             getNextPoint().setPassed(true);
