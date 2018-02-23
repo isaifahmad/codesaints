@@ -6,13 +6,18 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Vibrator;
+import android.speech.RecognitionListener;
+import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
@@ -20,20 +25,20 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
-import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.pathways.R;
 import com.pathways.conversation.ui.ChatAdapter;
 import com.pathways.conversation.ui.UIIncomingChatMessage;
+import com.pathways.conversation.ui.UIOutgoingChatMessage;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import ai.api.AIListener;
+import ai.api.AIServiceException;
 import ai.api.android.AIConfiguration;
-import ai.api.android.AIService;
-import ai.api.android.GsonFactory;
-import ai.api.model.AIError;
+import ai.api.android.AIDataService;
+import ai.api.model.AIRequest;
 import ai.api.model.AIResponse;
 import ai.api.model.Metadata;
 import ai.api.model.Result;
@@ -43,16 +48,13 @@ import ai.api.model.Result;
  * Created by abhishek on 2/21/18.
  */
 
-public class ConversationActivity extends Activity implements AIListener, UtteranceCompleteListener {
+public class ConversationActivity extends Activity implements UtteranceCompleteListener, RecognitionListener {
 
-    private AIService aiService;
     private TextView resultTextView;
     private static final String TAG = ConversationActivity.class.getName();
-    private Gson gson = GsonFactory.getGson();
     private static final int REQUEST_AUDIO_PERMISSIONS_ID = 33;
 
     private final String CLIENT_ACCESS_TOKEN = "a72af662d4e441eb87aead05e632b6d2";
-    private final String DEFAULT_SPEECH = "";
     private boolean isListening = false;
     private boolean isUttering = false;
     private ListView chatListView;
@@ -61,6 +63,9 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
 
     private AudioManager audioManager;
     private int currentVolume = 50;
+    private SpeechRecognizer stt;
+    private Intent recognizer_intent;
+    private AIDataService aiDataService;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -79,15 +84,25 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
         adapter = new ChatAdapter(getApplicationContext());
         chatListView.setAdapter(adapter);
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        // currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
     }
 
     private void initAISDK() {
+        stt = SpeechRecognizer.createSpeechRecognizer(this);
+        recognizer_intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        recognizer_intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "en");
+        recognizer_intent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE,
+                this.getPackageName());
+        recognizer_intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
+        recognizer_intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
+        stt.setRecognitionListener(this);
+        stt.startListening(recognizer_intent);
+
+
         TTS.init(this, this);
         final AIConfiguration config = new AIConfiguration(CLIENT_ACCESS_TOKEN, AIConfiguration.SupportedLanguages.English,
                 AIConfiguration.RecognitionEngine.System);
-        aiService = AIService.getService(this, config);
-        aiService.setListener(this);
+        aiDataService = new AIDataService(this, config);
     }
 
     private void vibrate() {
@@ -128,8 +143,8 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
     @Override
     protected void onPause() {
         super.onPause();
-        if (aiService != null) {
-            aiService.stopListening();
+        if (stt != null) {
+            stt.stopListening();
             audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, currentVolume, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
 
         }
@@ -138,15 +153,14 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
     @Override
     protected void onResume() {
         super.onResume();
-        if (aiService != null) {
+        if (stt != null) {
             vibrate();
             audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
-            aiService.startListening();
+            stt.startListening(recognizer_intent);
         }
     }
 
 
-    @Override
     public void onResult(final AIResponse response) {
         runOnUiThread(new Runnable() {
             @Override
@@ -154,15 +168,12 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
 
                 final Result result = response.getResult();
                 final String speech = result.getFulfillment().getSpeech();
-                Log.d("Maps", speech);
-                Log.d("Maps", "" + speech.equalsIgnoreCase("4 BHK"));
                 // UIOutgoingChatMessage message = new UIOutgoingChatMessage(speech);
                 UIIncomingChatMessage message = new UIIncomingChatMessage(speech);
                 adapter.appendMessages(message);
                 if (speech.equalsIgnoreCase("4 BHK") ||
                         speech.equalsIgnoreCase("5 BHK") ||
                         speech.equalsIgnoreCase("6 BHK")) {
-                    Log.d("Maps", "Here");
                     Intent intent = new Intent(ConversationActivity.this, ViewFlipperActivity.class);
                     intent.putExtra(ViewFlipperActivity.CHECK, speech);
                     startActivity(intent);
@@ -187,53 +198,6 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
         });
     }
 
-    @Override
-    public void onError(AIError error) {
-
-    }
-
-    @Override
-    public void onAudioLevel(float level) {
-
-    }
-
-    @Override
-    public void onListeningStarted() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                isListening = true;
-                imageView.setVisibility(View.VISIBLE);
-                resultTextView.setText("Listening Started");
-            }
-        });
-    }
-
-    @Override
-    public void onListeningCanceled() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                imageView.setVisibility(View.INVISIBLE);
-                resultTextView.setText("Listening Canceled");
-                isListening = false;
-                StartListeningIfAlreadyNotStarted();
-            }
-        });
-    }
-
-    @Override
-    public void onListeningFinished() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                imageView.setVisibility(View.INVISIBLE);
-                resultTextView.setText("Listening Finished");
-                isListening = false;
-                StartListeningIfAlreadyNotStarted();
-            }
-        });
-    }
 
     private void StartListeningIfAlreadyNotStarted() {
         Handler handler = new Handler();
@@ -243,7 +207,7 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
                 if (!isUttering && !isListening) {
                     vibrate();
                     audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
-                    aiService.startListening();
+                    stt.startListening(recognizer_intent);
                 }
             }
         }, 3000);
@@ -258,8 +222,102 @@ public class ConversationActivity extends Activity implements AIListener, Uttera
                 vibrate();
                 audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
                 isUttering = false;
-                aiService.startListening();
+                stt.startListening(recognizer_intent);
             }
         });
+    }
+
+    @Override
+    public void onReadyForSpeech(Bundle bundle) {
+        imageView.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void onBeginningOfSpeech() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                isListening = true;
+                resultTextView.setText("Listening Started");
+            }
+        });
+    }
+
+    @Override
+    public void onRmsChanged(float v) {
+
+    }
+
+    @Override
+    public void onBufferReceived(byte[] bytes) {
+
+    }
+
+    @Override
+    public void onEndOfSpeech() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                imageView.setVisibility(View.INVISIBLE);
+                resultTextView.setText("Listening Finished");
+                isListening = false;
+                StartListeningIfAlreadyNotStarted();
+            }
+        });
+    }
+
+    @Override
+    public void onError(int i) {
+    }
+
+    @Override
+    public void onResults(Bundle bundle) {
+        ArrayList<String> matches = bundle.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+        if (matches != null && matches.size() > 0 && !matches.get(0).isEmpty()) {
+            requestQuery(matches.get(0));
+        }
+    }
+
+    private void requestQuery(String s) {
+        UIOutgoingChatMessage message = new UIOutgoingChatMessage(s);
+        adapter.appendMessages(message);
+        QueryTask task = new QueryTask();
+        task.execute(s);
+
+    }
+
+    class QueryTask extends AsyncTask<String, Void, AIResponse> {
+
+        @Override
+        protected AIResponse doInBackground(final String... params) {
+            final AIRequest request = new AIRequest();
+            String query = params[0];
+            if (!TextUtils.isEmpty(query))
+                request.setQuery(query);
+            try {
+                return aiDataService.request(request);
+            } catch (final AIServiceException e) {
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(final AIResponse response) {
+            if (response != null) {
+                onResult(response);
+            } else {
+                onError(1);
+            }
+        }
+    }
+
+    @Override
+    public void onPartialResults(Bundle bundle) {
+
+    }
+
+    @Override
+    public void onEvent(int i, Bundle bundle) {
+
     }
 }

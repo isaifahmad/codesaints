@@ -35,14 +35,9 @@ public abstract class BaseMessageViewSetter<BCM extends UIChatMessage, BVH exten
 
     public View getView(int position, View convertView, ViewGroup viewGroup) {
         BVH holder;
-
-        if (convertView == null) {
-            convertView = buildView();
-            holder = buildHolder(convertView);
-            convertView.setTag(holder);
-        } else {
-            holder = (BVH) convertView.getTag();
-        }
+        convertView = buildView();
+        holder = buildHolder(convertView);
+        convertView.setTag(holder);
         setViews(holder, position);
         return convertView;
     }
