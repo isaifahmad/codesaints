@@ -4,7 +4,7 @@
     <string name="title_conversation_maps">Conversation</string>
     <string name="title_floor_plan">Floor Plans</string>
     <string name="title">Path Ways</string>
-    <string name="bristol_chowk">Bristol Chowk</string>
-    <string name="destination">28.450810,77.099537</string>
+    <string name="bristol_chowk">Bristol Chowk 28.480888, 77.094385</string>
+    <string name="destination">DLF Camellias 28.450810,77.099537</string>
     <string name="start_site_visit">start site visit</string>
 </resources>
